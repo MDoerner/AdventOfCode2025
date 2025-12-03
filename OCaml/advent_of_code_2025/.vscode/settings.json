@@ -1,0 +1,6 @@
+{
+    "ocaml.sandbox": {
+        "kind": "opam",
+        "switch": "${workspaceFolder:advent_of_code_2025}"
+    }
+}

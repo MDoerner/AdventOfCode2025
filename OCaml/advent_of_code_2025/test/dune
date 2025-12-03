@@ -1,0 +1,6 @@
+ (data_only_dirs inputs)
+
+(test
+ (name test_day_solvers)
+ (libraries advent_of_code_2025)
+ (deps (glob_files ../lib/inputs/*.txt)))
