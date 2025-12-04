@@ -107,7 +107,7 @@ let%test "part 2 works for example" = let expectation = "3121910778619" in
   actual = expectation
 
 
-let%test "part 2 works for real input" = let expectation = "20077272987" in
+let%test "part 2 works for real input" = let expectation = "173229689350551" in
   let input_text = InputReader.read_day_input 3 in
   let input = parse input_text |> Option.get in
   let actual = solve_part_2 input in
