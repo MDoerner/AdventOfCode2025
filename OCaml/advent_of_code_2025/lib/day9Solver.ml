@@ -107,6 +107,7 @@ let is_red_green edges rect = (*let violations = List.filter (crosses_inside_of 
   in*)
   not (List.exists (crosses_inside_of rect) edges)
 
+  (* TODO: Fix this for the case of rectangles on the outside of the green area. *)
 let solve_part_2 red_points = let green_edges = edges red_points in
   red_points |> 
   possible_corner_pairs |> 
