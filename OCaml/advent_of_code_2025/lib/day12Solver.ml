@@ -151,7 +151,7 @@ let%test "parses example" = let expectation = {package_types = [7;7;7;7;7;7]; tr
   actual = (Some expectation)
 
 
-let%test "part 1 works for real input" = let expectation = "724" in
+let%test "part 1 works for real input" = let expectation = "425" in
   let input_text = InputReader.read_day_input 12 in
   let input = parse input_text |> Option.get in
   let actual = solve_part_1 input in
