@@ -270,12 +270,18 @@ module IntPID : INT_PID = struct
 
   let remainder a b = ((a mod b) + b) mod b (* This guarantees that the remainder is always positive. *)
 
-  let rec extended_euclidean_algorithm a b = 
+  let rec extended_euclidean_algorithm_impl a b = 
     if a = 0 then 
       (b, 0, 1)
     else 
-      let (gcd, x, y) = extended_euclidean_algorithm (remainder b a) a in
+      let (gcd, x, y) = extended_euclidean_algorithm_impl (remainder b a) a in
       (gcd, y - (b/a) * x, x)
+
+
+  let extended_euclidean_algorithm a b = let sign_a = if a < 0 then -1 else 1 in 
+    let sign_b = if b < 0 then -1 else 1 in
+    let (gcd, sigma, tau) = extended_euclidean_algorithm_impl (sign_a * a) (sign_b * b) in
+    (gcd, sign_a * sigma, sign_b * tau)
 
   let gcd_with_bezout a b = let (gcd, sigma, tau) = extended_euclidean_algorithm a b in
       let _ = if gcd <> sigma * a + tau * b then  
@@ -417,11 +423,14 @@ let switch_row_sign a u t = let (n, _m) = IntMatrix.dimensions a in
     let new_a = IntMatrix.mul adjustment_matrix a in
     (new_a, new_u) 
 
+    
+(* Removed after fixing the euclidean algorithm to make the algorithm work for arbitrary PIDs.
 let switch_column_sign a v t = let (_n, m) = IntMatrix.dimensions a in
     let adjustment_matrix = sign_switch_matrix m t in
     let new_v = IntMatrix.mul v adjustment_matrix in
     let new_a = IntMatrix.mul a adjustment_matrix in
     (new_a, new_v) 
+*)
 
 let adjust_row_signs_below a u t j_t = let relevant_col = a |> IntMatrix.columns |> (fun ls -> List.nth ls j_t) |> List.drop t in
       let (a_new, u_new, _ ) = List.fold_left
@@ -433,6 +442,8 @@ let adjust_row_signs_below a u t j_t = let relevant_col = a |> IntMatrix.columns
     in
     (a_new, u_new)
 
+    
+(* Removed after fixing the euclidean algorithm to make the algorithm work for arbitrary PIDs.
 let adjust_column_signs a v t = let row = a |> IntMatrix.transpose |> IntMatrix.columns |> (fun ls -> List.nth ls t) in
       let (a_new, v_new, _ ) = List.fold_left
         (fun (a_curr, v_curr, k) x -> if not (IntPID.is_neg x) then (a_curr, v_curr, k + 1) else 
@@ -442,31 +453,46 @@ let adjust_column_signs a v t = let row = a |> IntMatrix.transpose |> IntMatrix.
         row
     in
     (a_new, v_new)
+*)
 
+(* Removed after fixing the euclidean algorithm to make the algorithm work for arbitrary PIDs.
 let adjust_signs a u v t j_t = let (a_row, u_new) = adjust_row_signs_below a u t j_t in
     let (a_new, v_new) = adjust_column_signs a_row v t in
     (a_new, u_new, v_new) 
+*)
 
 let rec index_phase a u v t j_t = let col = List.nth (IntMatrix.columns a) j_t in
   if (col |> List.drop (t + 1) |> List.for_all (fun x -> x = IntPID.zero)) &&  
     (let row = List.nth (a |> IntMatrix.transpose |> IntMatrix.columns) t in
     row |> List.drop (j_t + 1) |> List.for_all (fun x -> x = IntPID.zero)) then (a, u, v) else
+      (* Replaced by below after fixing euclidean algorithm to make it work for arbitrary PIDs.
       let (a_col, u_new) = column_phase a u t j_t in
       let (a_col_sign, v_sign) = adjust_column_signs a_col v t in (* Technically, this is unnecessary, but allows to keep make some simplifcations over integers. *)
       let (a_row, v_new) = row_phase a_col_sign v_sign t j_t in 
-      let (a_row_sign, u_new_sign) = adjust_row_signs_below a_row u_new t j_t in (* Technically, this is unnecessary, but allows to keep make some simplifcations over integers. *)
-      index_phase a_row_sign u_new_sign v_new t j_t     
+      let (a_row_sign, u_new_sign) = adjust_row_signs_below a_row u_new t j_t in (* Technically, this is unnecessary, but allows to keep make some simplifcations over integers. *)     
+      index_phase a_row_sign u_new_sign v_new t j_t  
+      *)
+      let (a_col, u_new) = column_phase a u t j_t in
+      let (a_row, v_new) = row_phase a_col v t j_t in      
+      index_phase a_row u_new v_new t j_t    
 
 let rec digonalization_phase a u v t j_t_candidate = let maybe_next_column = find_next_column_index a t j_t_candidate in
       match maybe_next_column with 
       | None -> (a, u, v)
       | Some j_t -> 
+        (* Replaced by below after fixing euclidean algorithm to make it work for arbitrary PIDs.
         (* let _ = print_endline ("a " ^ string_of_int t); print_matrix a in *)
         let (a_pivot, u_pivot) = find_pivot a u t j_t in
         (* let _ = print_endline ("a_pivot " ^ string_of_int t); print_matrix a_pivot; print_endline "" in *)
         let (a_sign, u_sign, v_sign) = adjust_signs a_pivot u_pivot v t j_t in (* Technically, this is unnecessary, but allows to keep make some simplifcations over integers. *)
         (* let _ = print_endline ("a_sign " ^ string_of_int t); print_matrix a_sign; print_endline "" in *)
         let (a_new, u_new, v_new) = index_phase a_sign u_sign v_sign t j_t in
+        digonalization_phase a_new u_new v_new (t + 1) (j_t + 1)
+        *)
+        (* let _ = print_endline ("a " ^ string_of_int t); print_matrix a in *)
+        let (a_pivot, u_pivot) = find_pivot a u t j_t in
+        (* let _ = print_endline ("a_pivot " ^ string_of_int t); print_matrix a_pivot; print_endline "" in *)
+        let (a_new, u_new, v_new) = index_phase a_pivot u_pivot v t j_t in
         digonalization_phase a_new u_new v_new (t + 1) (j_t + 1)
 
 let reorder_columns_phase a v = let a_tr = IntMatrix.transpose a in
